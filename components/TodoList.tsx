@@ -4,7 +4,7 @@ import React from "react";
 export const TodoList = ({ todos, deleteTodo, todoFinish }: ITodos) => {
   return todos.map((task) => (
     <div
-      key={task.task + task.id}
+      key={task.task + Math.floor(Math.random()*6)}
       className={`flex justify-between gap-5 items-center bg-slate-400 py-2 px-2 rounded-md`}
     >
       <span
