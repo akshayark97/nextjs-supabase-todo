@@ -6,6 +6,7 @@ import { ITodosList } from "@/constants";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getTodos } from "@/utils/common";
+import SignOutButton from "@/components/auth/signout-button";
 
 export const HomePage = () => {
   const [textInput, setTextInput] = useState<string>("");
