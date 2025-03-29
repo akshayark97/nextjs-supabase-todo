@@ -6,7 +6,6 @@ import { ITodosList } from "@/constants";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { getTodos } from "@/utils/common";
-import SignOutButton from "@/components/auth/signout-button";
 
 export const HomePage = () => {
   const [textInput, setTextInput] = useState<string>("");
@@ -28,9 +27,28 @@ export const HomePage = () => {
     } = await supabase.auth.getUser();
 
     if (textInput.length === 0) return;
+
+    const { data, error } = await supabase
+      .from("todos")
+      .insert([
+        {
+          user_id: user?.id,
+          task: textInput,
+          is_complete: false,
+          inserted_at: new Date(),
+        },
+      ])
+      .select("id")
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
     setTodos((prevState) => [
       ...prevState,
       {
+        id: data.id,
         user_id: user!.id,
         task: textInput,
         is_complete: false,
@@ -38,19 +56,6 @@ export const HomePage = () => {
       },
     ]);
     setTextInput("");
-
-    const { error } = await supabase.from("todos").insert([
-      {
-        user_id: user?.id,
-        task: textInput,
-        is_complete: false,
-        inserted_at: new Date(),
-      },
-    ]);
-
-    if (error) {
-      throw new Error(error.message);
-    }
   };
 
   const deleteTodo = async (todoId: number) => {
@@ -66,26 +71,34 @@ export const HomePage = () => {
   };
 
   const todoFinish = async (todoId: number) => {
-    const strikeTodo = todos.find((task, index) => task.id == todoId);
-
+    if (!todoId) return; // Ensure valid id
+  
     const supabase = createClient();
-
+  
+    // Update local state immediately
+    setTodos((prevTodos) =>
+      prevTodos.map((todo) =>
+        todo.id === todoId ? { ...todo, is_complete: !todo.is_complete } : todo
+      )
+    );
+  
+    // Update the database
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
+  
     const { error } = await supabase
       .from("todos")
-      .update({ is_complete: strikeTodo?.is_complete === true ? false : true })
+      .update({
+        is_complete: !todos.find((task) => task.id === todoId)?.is_complete,
+      })
       .eq("id", todoId)
-      .eq("user_id", user?.id)
-      .select();
-
+      .eq("user_id", user?.id);
+  
     if (error) {
       throw new Error(error.message);
     }
-    fetchTodos();
-  };
+  };  
 
   return (
     <div className="flex flex-col justify-center items-center h-screen bg-slate-500">
